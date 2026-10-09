@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROTOCOL-X — What Did I Miss? | Local-First AI Message Organiser</title>
+  <meta name="description" content="Triage overwhelming chat conversations into Important, Not Required Now, and Trash with 100% on-device AI processing.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ==================== TOP NAVIGATION ==================== -->
+  <header class="app-header">
+    <div class="brand-container">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <h1 class="brand-title">PROTOCOL-X</h1>
+        <div class="brand-tagline">"What Did I Miss?" • Local AI Message Organiser</div>
+      </div>
+    </div>
+
+    <div class="header-badges">
+      <button id="privacyAuditBtn" class="privacy-badge" title="Click to verify local-first privacy status">
+        <span class="pulse-dot"></span>
+        <span>100% Local-First Engine</span>
+      </button>
+
+      <div class="user-handle-pill">
+        <span>Triage For:</span>
+        <span>@</span>
+        <input type="text" id="userHandleInput" class="user-handle-input" value="prashant" title="Enter your username or handle to highlight direct mentions and tasks">
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <select id="presetSelect" class="btn btn-secondary" style="padding: 0.45rem 0.65rem;" title="Select sample scenario">
+        <option value="hackathon">Scenario: Hackathon Committee (Default)</option>
+        <option value="incident">Scenario: P0 Production Outage</option>
+        <option value="productLaunch">Scenario: Q4 Product Launch</option>
+      </select>
+
+      <button id="openImportModalBtn" class="btn btn-secondary" title="Paste custom chat logs or JSON">
+        📥 Paste Chat
+      </button>
+
+      <button id="simulateIncomingBtn" class="btn btn-secondary" title="Inject simulated incoming message">
+        ➕ Live Msg
+      </button>
+
+      <button id="saveChangesBtn" class="btn btn-save" title="Save any edits made to storage">
+        💾 Save Changes
+      </button>
+
+      <button id="exportBriefBtn" class="btn btn-secondary" title="Export Markdown Executive Brief">
+        📤 Export
+      </button>
+
+      <!-- TOPMOST RIGHT: STUDENT PROFILE WIDGET -->
+      <div class="user-profile-widget" id="userProfileWidget" title="Click to view & edit your student profile">
+        <div class="profile-avatar-circle" id="headerUserAvatar">👨‍💻</div>
+        <div class="profile-details-mini">
+          <span class="profile-name-mini" id="headerUserName">Prashant Kumar</span>
+          <span class="profile-usn-mini" id="headerUserUsn">1BY23CS042</span>
+        </div>
+        <span class="profile-dropdown-arrow">▼</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT AREA ==================== -->
+  <main class="app-main">
+
+    <!-- ==================== WELCOME BANNER ==================== -->
+    <div class="welcome-header-strip" aria-label="Welcome banner">
+      <div class="welcome-avatar-badge" id="welcomeAvatarBadge">👨‍💻</div>
+      <div style="flex: 1;">
+        <div class="welcome-greeting">Welcome, <span class="welcome-name-bold" id="welcomeUserName">Prashant Kumar</span>!</div>
+        <div class="welcome-subtitle" id="welcomeSubtitle">USN: 1BY23CS042 &nbsp;|&nbsp; Your personalised triage dashboard is ready — 100% local, zero cloud.</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.3rem; position:relative; z-index:1;">
+        <span style="font-size:0.72rem; color:#a5b4fc; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">Today</span>
+        <span id="welcomeCurrentTime" style="font-size:1rem; font-weight:800; color:#ffffff;">--:-- --</span>
+      </div>
+    </div>
+
+    <!-- HERO EXECUTIVE BRIEF ("WHAT DID I MISS?") -->
+    <section class="hero-brief-container" aria-label="Executive Catch-Up Summary">
+      <div class="brief-header">
+        <div class="brief-title-area">
+          <div class="brief-title">
+            <span>⚡ 30-Second Executive Catch-Up</span>
+          </div>
+          <span class="brief-pill">Real-time Local AI Digest</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span id="lastSavedIndicator" style="font-size: 0.72rem; color: var(--text-dim);">Auto-saved locally</span>
+          <button id="regenerateSummaryBtn" class="btn btn-secondary btn-icon" title="Regenerate summary from current message board">🔄 Re-summarize</button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon-box urgent">🔴</div>
+          <div class="metric-data">
+            <span id="metricUrgentCount" class="metric-number">0</span>
+            <span class="metric-label">Important / Urgent Messages</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-box mention">📌</div>
+          <div class="metric-data">
+            <span id="metricMentionCount" class="metric-number">0</span>
+            <span class="metric-label">Mentions for You</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-box deadline">⏰</div>
+          <div class="metric-data">
+            <span id="metricDeadlineCount" class="metric-number">0</span>
+            <span class="metric-label">Deadlines & Milestones</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-box savings">🛡️</div>
+          <div class="metric-data">
+            <span id="metricNoisePercent" class="metric-number">0%</span>
+            <span class="metric-label">Fluff Filtered (<span id="metricTimeSaved">0</span>m saved)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brief Content Layout: Editable Summary & Action Checklist -->
+      <div class="brief-content-layout">
+        
+        <!-- Editable Executive Summary -->
+        <div class="summary-editor-card">
+          <div class="section-label">
+            <span>Executive TL;DR (Click to edit)</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">✏️ Editable • Stored Locally</span>
+          </div>
+          <textarea id="summaryTextarea" class="summary-textarea" placeholder="AI Executive Summary will appear here..."></textarea>
+          <div id="summaryHighlightsList" style="display: flex; flex-direction: column; gap: 0.35rem;">
+            <!-- Highlights inserted dynamically -->
+          </div>
+        </div>
+
+        <!-- Missed Deadlines & Action Items Tracker -->
+        <div class="action-deadlines-card">
+          <div class="section-label">
+            <span>⏰ Detected Deadlines & Cutoffs</span>
+            <span id="deadlinesCountBadge" class="column-badge badge-later">0</span>
+          </div>
+          <div id="deadlinesList" class="deadlines-list">
+            <!-- Deadlines inserted dynamically -->
+          </div>
+
+          <div class="section-label" style="margin-top: 0.5rem;">
+            <span>✅ Action Items & Tasks (<span id="userTaskCount">0</span> for you)</span>
+            <button id="quickAddTaskBtn" class="btn-text-action" style="font-weight: 600; color: #a5b4fc;">+ Add Task</button>
+          </div>
+          <div id="tasksList" class="tasks-checklist">
+            <!-- Tasks inserted dynamically -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== TOOLBAR & FILTERS ==================== -->
+    <section class="toolbar-container" aria-label="Message Controls">
+      <div class="filter-pills">
+        <button class="filter-chip active" data-filter="all">All Messages (<span id="chipCountAll">0</span>)</button>
+        <button class="filter-chip" data-filter="important">🔴 Important (<span id="chipCountImportant">0</span>)</button>
+        <button class="filter-chip" data-filter="later">🟡 Not Required Now (<span id="chipCountLater">0</span>)</button>
+        <button class="filter-chip" data-filter="trash">🗑️ Trash / Fluff (<span id="chipCountTrash">0</span>)</button>
+        <button class="filter-chip" data-filter="mentions">📌 @Mentions (<span id="chipCountMentions">0</span>)</button>
+        <button class="filter-chip" data-filter="deadlines">⏰ Deadlines</button>
+      </div>
+
+      <div style="display: flex; gap: 0.6rem; align-items: center;">
+        <div class="search-input-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search message content, sender, keyword...">
+        </div>
+        <button id="emptyTrashBtn" class="btn btn-secondary btn-icon" title="Clear all messages marked as trash">🗑️ Purge Trash</button>
+        <button id="resetPresetBtn" class="btn btn-secondary btn-icon" title="Reset current scenario to original state">↩️ Reset</button>
+      </div>
+    </section>
+
+    <!-- ==================== TRI-BUCKET KANBAN ORGANIZER ==================== -->
+    <section class="triage-board" aria-label="Tri-Column Message Organiser">
+      
+      <!-- COLUMN 1: IMPORTANT (ACTION REQUIRED) -->
+      <div class="triage-column column-important" id="columnImportant">
+        <div class="column-header">
+          <div class="column-title-group">
+            <span class="column-icon">🔴</span>
+            <h2 class="column-title">Important</h2>
+          </div>
+          <span id="badgeImportantCount" class="column-badge badge-important">0</span>
+        </div>
+        <div class="column-subtitle">Action required, blockers, personal mentions & urgent deadlines.</div>
+        <div class="messages-list" id="listImportant" data-category="important">
+          <!-- Important messages loaded here -->
+        </div>
+      </div>
+
+      <!-- COLUMN 2: NOT REQUIRED NOW (READ LATER / FYI) -->
+      <div class="triage-column column-later" id="columnLater">
+        <div class="column-header">
+          <div class="column-title-group">
+            <span class="column-icon">🟡</span>
+            <h2 class="column-title">Not Required Now</h2>
+          </div>
+          <span id="badgeLaterCount" class="column-badge badge-later">0</span>
+        </div>
+        <div class="column-subtitle">Team progress updates, FYI announcements, low-urgency discussion.</div>
+        <div class="messages-list" id="listLater" data-category="later">
+          <!-- Later messages loaded here -->
+        </div>
+      </div>
+
+      <!-- COLUMN 3: PUT TO TRASH (NOISE & FLUFF) -->
+      <div class="triage-column column-trash" id="columnTrash">
+        <div class="column-header">
+          <div class="column-title-group">
+            <span class="column-icon">🗑️</span>
+            <h2 class="column-title">Put to Trash</h2>
+          </div>
+          <span id="badgeTrashCount" class="column-badge badge-trash">0</span>
+        </div>
+        <div class="column-subtitle">Greetings (gm), coffee banter, memes, stickers & casual fluff.</div>
+        <div class="messages-list" id="listTrash" data-category="trash">
+          <!-- Trash messages loaded here -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== FULL UNSUMMARISED CHAT STREAM ==================== -->
+    <section class="raw-chat-section" id="rawChatSection" aria-label="Full unsummarised conversation">
+      <div class="raw-chat-header">
+        <div class="raw-chat-title-group">
+          <span class="raw-chat-icon">💬</span>
+          <div>
+            <div class="raw-chat-title">Full Conversation — Unfiltered View</div>
+            <div class="raw-chat-subtitle">Every message in chronological order. Colour-coded by triage priority. (<span id="rawChatCount">0</span> messages)</div>
+          </div>
+        </div>
+        <div class="raw-chat-header-actions">
+          <select id="rawChatSortSelect" class="btn btn-secondary" style="padding:0.35rem 0.55rem; font-size:0.78rem;">
+            <option value="original">Original Order</option>
+            <option value="urgent">Urgent First</option>
+            <option value="mentions">Mentions First</option>
+          </select>
+          <button id="rawChatToggleBtn" class="btn btn-secondary btn-icon" title="Collapse / Expand full chat">▲ Collapse</button>
+        </div>
+      </div>
+      <div class="raw-chat-stream" id="rawChatStream">
+        <!-- All messages rendered here chronologically by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Import / Paste Chat Modal -->
+  <div id="importModal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">📥 Import or Paste Chat Transcript</div>
+        <button class="btn-close-modal" data-close-modal="importModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.82rem; color: var(--text-muted);">
+          Paste text from Slack, WhatsApp, Microsoft Teams, Discord, or standard chat format (e.g., <code>[10:30 AM] Alice: Message</code>). Data will be processed <strong>100% locally on your machine</strong>.
+        </p>
+        <textarea id="pasteChatTextarea" class="textarea-modal" placeholder="[09:15 AM] Aarav: @prashant please deploy the hotfix before 10:30 AM
+[09:16 AM] Sneha: Good morning everyone! Coffee time!
+[09:20 AM] David: DECISION: We approved the new design."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="importModal">Cancel</button>
+        <button id="executeImportBtn" class="btn btn-primary">Process with Local AI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Local-First Privacy Verification Modal -->
+  <div id="privacyModal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">🔒 Local-First Privacy Verification</div>
+        <button class="btn-close-modal" data-close-modal="privacyModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 1rem; border-radius: var(--radius-md);">
+          <h3 style="color: #34d399; font-size: 0.95rem; margin-bottom: 0.3rem;">Zero-Cloud Data Guarantee</h3>
+          <p style="font-size: 0.82rem; color: #a7f3d0; line-height: 1.5;">
+            All classification heuristics, deadline extractions, task discoveries, and summaries run directly in your local browser sandbox.
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.83rem;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Outbound Network API Calls:</span>
+            <strong style="color: #34d399;">0 bytes (Disabled)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Active Storage Engine:</span>
+            <strong style="color: #ffffff;">HTML5 LocalStorage / In-Memory</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">Estimated Local Cache:</span>
+            <strong id="privacyStorageSize" style="color: #ffffff;">~12 KB</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem;">
+            <span style="color: var(--text-muted);">External Telemetry / Trackers:</span>
+            <strong style="color: #34d399;">None / Blocked</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="clearStorageBtn" class="btn btn-urgent">Wipe Local Storage</button>
+        <button class="btn btn-primary" data-close-modal="privacyModal">Close Audit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Add Custom Task Modal -->
+  <div id="addTaskModal" class="modal-backdrop">
+    <div class="modal-container" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title">➕ Add Custom Action Item</div>
+        <button class="btn-close-modal" data-close-modal="addTaskModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label style="font-size: 0.8rem; color: var(--text-muted);">Task Description</label>
+        <input type="text" id="newTaskInput" class="search-input" placeholder="e.g. Verify database schema v43 migration" style="padding-left: 0.85rem;">
+
+        <div style="display: flex; gap: 0.75rem;">
+          <div style="flex: 1;">
+            <label style="font-size: 0.8rem; color: var(--text-muted);">Assignee</label>
+            <input type="text" id="newTaskAssignee" class="search-input" value="prashant" style="padding-left: 0.85rem;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 0.8rem; color: var(--text-muted);">Deadline (Optional)</label>
+            <input type="text" id="newTaskDeadline" class="search-input" placeholder="e.g. 5:00 PM" style="padding-left: 0.85rem;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="addTaskModal">Cancel</button>
+        <button id="confirmAddTaskBtn" class="btn btn-primary">Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Student Profile Management Modal (Topmost Right Corner Trigger) -->
+  <div id="profileModal" class="modal-backdrop">
+    <div class="modal-container" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title">🎓 Student Profile & Preferences</div>
+        <button class="btn-close-modal" data-close-modal="profileModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Avatar Customizer Section -->
+        <div class="avatar-selector-section">
+          <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Customise Profile Picture / Avatar</label>
+          <div class="avatar-preview-box">
+            <div class="avatar-large-preview" id="profileAvatarPreview">👨‍💻</div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 0.4rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: #ffffff;" id="profilePreviewName">Prashant Kumar</span>
+              <span style="font-size: 0.75rem; color: #a5b4fc;" id="profilePreviewUsn">USN: 1BY23CS042</span>
+              <span style="font-size: 0.72rem; color: var(--text-dim);">Pick from avatars below or upload a custom image</span>
+            </div>
+          </div>
+
+          <!-- Avatar Grid Options -->
+          <div class="avatar-grid-list" id="avatarGridList">
+            <button class="avatar-choice-btn selected" data-avatar="👨‍💻">👨‍💻</button>
+            <button class="avatar-choice-btn" data-avatar="👩‍💻">👩‍💻</button>
+            <button class="avatar-choice-btn" data-avatar="🎓">🎓</button>
+            <button class="avatar-choice-btn" data-avatar="🚀">🚀</button>
+            <button class="avatar-choice-btn" data-avatar="🤖">🤖</button>
+            <button class="avatar-choice-btn" data-avatar="🎨">🎨</button>
+            <button class="avatar-choice-btn" data-avatar="⚡">⚡</button>
+            <button class="avatar-choice-btn" data-avatar="💼">💼</button>
+            <button class="avatar-choice-btn" data-avatar="🦊">🦊</button>
+            <button class="avatar-choice-btn" data-avatar="🦁">🦁</button>
+            <button class="avatar-choice-btn" data-avatar="🌟">🌟</button>
+            <button class="avatar-choice-btn" data-avatar="🎯">🎯</button>
+          </div>
+
+          <!-- Custom Photo Upload -->
+          <div class="custom-photo-upload-row">
+            <label class="btn btn-secondary" style="font-size: 0.74rem; cursor: pointer;">
+              📁 Upload Photo
+              <input type="file" id="profilePhotoFileInput" accept="image/*" style="display: none;">
+            </label>
+            <span style="font-size: 0.72rem; color: var(--text-dim);">Supports JPG/PNG. Stored 100% locally on your machine.</span>
+          </div>
+        </div>
+
+        <!-- Personal Info Fields -->
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; margin-top: 0.25rem;">
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Full Name</label>
+            <input type="text" id="profileNameInput" class="search-input" placeholder="e.g. Prashant Kumar" style="padding-left: 0.85rem;">
+          </div>
+
+          <div style="display: flex; gap: 0.75rem;">
+            <div style="flex: 1;">
+              <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">College USN</label>
+              <input type="text" id="profileUsnInput" class="search-input" placeholder="e.g. 1BY23CS042" style="padding-left: 0.85rem; text-transform: uppercase;">
+            </div>
+            <div style="flex: 1.3;">
+              <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">College Email ID</label>
+              <input type="email" id="profileEmailInput" class="search-input" placeholder="e.g. prashant@bmsit.in" style="padding-left: 0.85rem;">
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button id="profileLogoutBtn" class="btn btn-urgent" title="Logout with your USN">🚪 Logout (USN: <span id="logoutUsnLabel">1BY23CS042</span>)</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" data-close-modal="profileModal">Cancel</button>
+          <button id="saveProfileBtn" class="btn btn-primary">Save Profile Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. College USN Authentication Modal / Login Gate -->
+  <div id="authModal" class="auth-modal-overlay hidden">
+    <div class="auth-card">
+      <div class="auth-card-header">
+        <div class="brand-icon" style="width: 48px; height: 48px; font-size: 1.7rem;">⚡</div>
+        <div class="auth-badge-college">🏛️ Student Portal Authentication</div>
+        <h2 style="font-size: 1.3rem; font-weight: 800; color: #ffffff;">Login with College USN</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 380px;">
+          Enter your College USN to unlock your personalised, local-first message triage dashboard.
+        </p>
+      </div>
+
+      <!-- Quick 1-Click Demo Profiles -->
+      <div>
+        <label style="font-size: 0.75rem; color: #a5b4fc; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Quick Demo Sign-In:</label>
+        <div class="quick-usn-select-grid">
+          <button class="quick-usn-btn" data-demo-usn="1BY23CS042" data-demo-name="Prashant Kumar" data-demo-email="prashant.cs23@bmsit.in" data-demo-avatar="👨‍💻">
+            <span style="display: flex; align-items: center; gap: 0.5rem;">
+              <span>👨‍💻</span>
+              <strong>1BY23CS042</strong> — Prashant Kumar (CSE)
+            </span>
+            <span style="font-size: 0.75rem; color: #34d399;">Select ➔</span>
+          </button>
+
+          <button class="quick-usn-btn" data-demo-usn="1BY23IS019" data-demo-name="Ananya Sharma" data-demo-email="ananya.is23@bmsit.in" data-demo-avatar="👩‍💻">
+            <span style="display: flex; align-items: center; gap: 0.5rem;">
+              <span>👩‍💻</span>
+              <strong>1BY23IS019</strong> — Ananya Sharma (ISE)
+            </span>
+            <span style="font-size: 0.75rem; color: #34d399;">Select ➔</span>
+          </button>
+
+          <button class="quick-usn-btn" data-demo-usn="1BY23AI005" data-demo-name="Aarav Patel" data-demo-email="aarav.ai23@bmsit.in" data-demo-avatar="🤖">
+            <span style="display: flex; align-items: center; gap: 0.5rem;">
+              <span>🤖</span>
+              <strong>1BY23AI005</strong> — Aarav Patel (AIML)
+            </span>
+            <span style="font-size: 0.75rem; color: #34d399;">Select ➔</span>
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <hr style="flex: 1; border: none; border-top: 1px solid var(--border-subtle);">
+        <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Or Enter Your Details</span>
+        <hr style="flex: 1; border: none; border-top: 1px solid var(--border-subtle);">
+      </div>
+
+      <!-- Custom USN Form -->
+      <form id="loginForm" style="display: flex; flex-direction: column; gap: 0.85rem;" onsubmit="return false;">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">College USN *</label>
+          <input type="text" id="loginUsnInput" class="search-input" placeholder="e.g. 1BY23CS042" required style="padding-left: 0.85rem; text-transform: uppercase;">
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <div style="flex: 1;">
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Full Name</label>
+            <input type="text" id="loginNameInput" class="search-input" placeholder="Your Name" style="padding-left: 0.85rem;">
+          </div>
+          <div style="flex: 1.2;">
+            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">College Email</label>
+            <input type="email" id="loginEmailInput" class="search-input" placeholder="name@college.edu" style="padding-left: 0.85rem;">
+          </div>
+        </div>
+
+        <button type="submit" id="loginSubmitBtn" class="btn btn-primary" style="padding: 0.75rem; font-size: 0.9rem; margin-top: 0.4rem;">
+          🚀 Log In & Open Dashboard
+        </button>
+      </form>
+
+      <div style="text-align: center; font-size: 0.73rem; color: var(--text-dim);">
+        🔒 100% On-Device Auth: Credentials and session are never sent to external servers.
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="presets.js"></script>
+  <script src="nlp-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
